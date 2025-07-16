@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: bet-reactive
+  cloud:
+    stream:
+      bindings:
+        userProducer-out-0:
+          destination: transaction.create
+          content-type: application/json
+        userConsumer-in-0:
+          destination: transaction.create
+          group: user-group
+          content-type: application/json
+      kafka:
+        binder:
+          brokers: localhost:29092
+  logging:
+    level:
+      org.springframework.cloud: DEBUG
+      org.springframework.boot: DEBUG
