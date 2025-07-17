@@ -1,10 +1,14 @@
 package ua.orlov.betreactive.service.impl;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 import ua.orlov.betreactive.dto.CreateUserRequest;
+import ua.orlov.betreactive.dto.UpdateUserRequest;
+import ua.orlov.betreactive.exceptions.EntityNotFoundException;
 import ua.orlov.betreactive.mapper.UserMapper;
 import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.repository.UserRepository;
@@ -13,6 +17,7 @@ import ua.orlov.betreactive.service.kafka.UserKafkaService;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -34,5 +39,29 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<User> getUserById(UUID id) {
         return userRepository.findById(id);
+    }
+
+    @Override
+    public Flux<User> getAllUsers(Pageable pageable) {
+        return userRepository.findAllBy(pageable);
+    }
+
+    @Override
+    public Mono<Void> deleteUserById(UUID id) {
+        return getUserById(id)
+                .flatMap(user ->
+                        userRepository.deleteById(id)
+                                .doOnSuccess(v -> log.info("Deleted user from DB: {}", id))
+                );
+    }
+
+    @Override
+    public Mono<User> updateUser(UpdateUserRequest request) {
+        return userRepository.findById(request.getId())
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found with id: " + request.getId())))
+                .flatMap(existingUser -> {
+                    User updatedUser = userMapper.mapUpdateUserRequestToUser(request);
+                    return userRepository.save(updatedUser);
+                });
     }
 }
