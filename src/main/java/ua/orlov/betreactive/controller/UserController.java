@@ -21,7 +21,7 @@ public class UserController {
         return userService.createUser(request);
     }
 
-    @GetMapping("/user/{id}")
+    @GetMapping("/users/{id}")
     public Mono<User> getUser(@PathVariable UUID id) {
         return userService.getUserById(id);
     }

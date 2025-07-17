@@ -1,20 +1,37 @@
 spring:
   application:
     name: bet-reactive
+  kafka:
+    bootstrap-servers: localhost:29092
+    consumer:
+      group-id: user-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: '*'
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   cloud:
     stream:
       bindings:
         userProducer-out-0:
-          destination: transaction.create
-          content-type: application/json
+          destination: user-topic
         userConsumer-in-0:
-          destination: transaction.create
-          group: user-group
-          content-type: application/json
+          destination: user-topic
       kafka:
         binder:
           brokers: localhost:29092
+          auto-create-topics: true
+          consumer:
+            configuration:
+              group.id: bet-reactive-group
+      function:
+        definition: userProducer;userConsumer
   logging:
     level:
       org.springframework.cloud: DEBUG
       org.springframework.boot: DEBUG
+
+user:
+   topic: user-topic
