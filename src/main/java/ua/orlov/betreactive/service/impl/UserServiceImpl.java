@@ -48,16 +48,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<Void> deleteUserById(UUID id) {
-        return getUserById(id)
-                .flatMap(user ->
-                        userRepository.deleteById(id)
-                                .doOnSuccess(v -> log.info("Deleted user from DB: {}", id))
-                );
+        return userRepository.deleteById(id)
+                .doOnTerminate(() -> log.info("Deleted user from DB: {}", id));
     }
 
     @Override
     public Mono<User> updateUser(UpdateUserRequest request) {
-        return userRepository.findById(request.getId())
+        return getUserById(request.getId())
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found with id: " + request.getId())))
                 .flatMap(existingUser -> {
                     User updatedUser = userMapper.mapUpdateUserRequestToUser(request);
