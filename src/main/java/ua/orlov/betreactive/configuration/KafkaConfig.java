@@ -2,6 +2,7 @@ package ua.orlov.betreactive.configuration;
 
 import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -20,8 +21,24 @@ import java.util.function.Supplier;
 public class KafkaConfig {
 
     @Bean
-    public NewTopic topic() {
-        return TopicBuilder.name("user-topic")
+    public NewTopic userTopic(@Value("${kafka.topic.user}") String topic) {
+        return TopicBuilder.name(topic)
+                .partitions(10)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic eventTopic(@Value("${kafka.topic.event}") String topic) {
+        return TopicBuilder.name(topic)
+                .partitions(10)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic betTopic(@Value("${kafka.topic.bet}") String topic) {
+        return TopicBuilder.name(topic)
                 .partitions(10)
                 .replicas(1)
                 .build();

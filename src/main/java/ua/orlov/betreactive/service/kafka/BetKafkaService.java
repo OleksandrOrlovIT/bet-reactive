@@ -4,19 +4,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate;
 import org.springframework.stereotype.Service;
 import reactor.kafka.receiver.ReceiverOptions;
-import ua.orlov.betreactive.model.User;
+import ua.orlov.betreactive.model.Bet;
 
 @Service
-public class UserKafkaService extends KafkaService<User> {
-
-    public UserKafkaService(ReactiveKafkaProducerTemplate<String, User> reactiveKafkaProducerTemplate,
-                            ReceiverOptions<String, User> receiverOptions,
-                            @Value("${kafka.topic.user}") String topic) {
+public class BetKafkaService extends KafkaService<Bet> {
+    public BetKafkaService(ReactiveKafkaProducerTemplate<String, Bet> reactiveKafkaProducerTemplate,
+                           ReceiverOptions<String, Bet> receiverOptions,
+                           @Value("${kafka.topic.bet}") String topic) {
         super(
                 reactiveKafkaProducerTemplate,
                 receiverOptions,
                 topic,
-                "User"
+                "Bet"
         );
     }
 }

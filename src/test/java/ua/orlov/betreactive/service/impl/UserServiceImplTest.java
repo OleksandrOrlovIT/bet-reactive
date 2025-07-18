@@ -39,10 +39,9 @@ class UserServiceImplTest {
 
     @Test
     void whenCreateUserThenSuccess() {
-        User mappedUser = new User();
-        mappedUser.setId(UUID.randomUUID());
+        User mappedUser = User.builder().id(UUID.randomUUID()).build();
 
-        when(userMapper.mapCreateUserRequestToUser(any())).thenReturn(new User());
+        when(userMapper.mapCreateUserRequestToUser(any())).thenReturn(User.builder().build());
         when(userRepository.save(any())).thenReturn(Mono.just(mappedUser));
 
         StepVerifier.create(userService.createUser(new CreateUserRequest()))
@@ -51,12 +50,12 @@ class UserServiceImplTest {
 
         verify(userMapper, times(1)).mapCreateUserRequestToUser(any());
         verify(userRepository, times(1)).save(any());
-        verify(userKafkaService, times(1)).sendUser(any());
+        verify(userKafkaService, times(1)).sendEntity(any());
     }
 
     @Test
     void whenGetUserByIdThenSuccess() {
-        User expectedUser = new User();
+        User expectedUser = User.builder().build();
         when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(expectedUser));
 
         StepVerifier.create(userService.getUserById(UUID.randomUUID()))
@@ -68,8 +67,8 @@ class UserServiceImplTest {
 
     @Test
     void whenGetAllUsersThenSuccess() {
-        User user1 = new User();
-        User user2 = new User();
+        User user1 = User.builder().build();
+        User user2 = User.builder().build();
         when(userRepository.findAllBy(any(Pageable.class))).thenReturn(Flux.just(user1, user2));
 
         StepVerifier.create(userService.getAllUsers(Pageable.unpaged()))
@@ -110,8 +109,7 @@ class UserServiceImplTest {
     @Test
     void whenUpdateUserThenSuccess() {
         UUID userId = UUID.randomUUID();
-        User mappedUser = new User();
-        mappedUser.setId(userId);
+        User mappedUser = User.builder().id(userId).build();
         UpdateUserRequest request = new UpdateUserRequest();
         request.setId(userId);
 

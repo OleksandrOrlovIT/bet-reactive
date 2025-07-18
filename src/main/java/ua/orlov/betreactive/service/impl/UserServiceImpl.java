@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
         mappedUser.setId(UUID.randomUUID());
 
         return userRepository.save(mappedUser)
-                .doOnSuccess(userKafkaService::sendUser);
+                .doOnSuccess(userKafkaService::sendEntity);
     }
 
     @Override

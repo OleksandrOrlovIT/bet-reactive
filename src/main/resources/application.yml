@@ -33,5 +33,8 @@ spring:
       org.springframework.cloud: DEBUG
       org.springframework.boot: DEBUG
 
-user:
-   topic: user-topic
+kafka:
+  topic:
+    user: user-topic
+    event: event-topic
+    bet: bet-topic

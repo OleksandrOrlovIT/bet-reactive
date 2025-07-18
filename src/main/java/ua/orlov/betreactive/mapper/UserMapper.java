@@ -9,22 +9,20 @@ import ua.orlov.betreactive.model.User;
 public class UserMapper {
 
     public User mapCreateUserRequestToUser(CreateUserRequest request) {
-        User user = new User();
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-
-        return user;
+        return User.builder()
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .build();
     }
 
     public User mapUpdateUserRequestToUser(UpdateUserRequest request) {
-        User user = new User();
-        user.setId(request.getId());
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-
-        return user;
+        return User.builder()
+                .id(request.getId())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .email(request.getEmail())
+                .build();
     }
 
 }

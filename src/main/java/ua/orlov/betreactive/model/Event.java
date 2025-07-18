@@ -4,30 +4,25 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @SuperBuilder
 @NoArgsConstructor
 @Document(collection = "users")
-public class User extends BaseEntity {
+public class Event extends BaseEntity {
 
-    @Field(name = "first_name")
-    private String firstName;
+    @Field(name = "name")
+    private String name;
 
-    @Field(name = "last_name")
-    private String lastName;
+    @Field(name = "start_date")
+    private LocalDateTime startDate;
 
-    @Indexed(unique = true)
-    @Field(name = "email")
-    private String email;
-
-    @Field(name = "balance")
-    private BigDecimal balance;
+    @Field(name = "end_date")
+    private LocalDateTime endDate;
 
 }
