@@ -1,19 +1,17 @@
 package ua.orlov.betreactive.service.kafka;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate;
 import org.springframework.stereotype.Service;
-import reactor.kafka.receiver.ReceiverOptions;
+import ua.orlov.betreactive.configuration.ReactiveKafkaConfig;
 import ua.orlov.betreactive.model.Bet;
 
 @Service
 public class BetKafkaService extends KafkaService<Bet> {
-    public BetKafkaService(ReactiveKafkaProducerTemplate<String, Bet> reactiveKafkaProducerTemplate,
-                           ReceiverOptions<String, Bet> receiverOptions,
-                           @Value("${kafka.topic.bet}") String topic) {
+
+    public BetKafkaService(ReactiveKafkaConfig kafkaConfig, @Value("${kafka.topic.bet}") String topic) {
         super(
-                reactiveKafkaProducerTemplate,
-                receiverOptions,
+                kafkaConfig.createProducerTemplate(Bet.class),
+                kafkaConfig.createReceiverOptions(topic),
                 topic,
                 "Bet"
         );

@@ -5,8 +5,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ua.orlov.betreactive.dto.UserCashInRequest;
 import ua.orlov.betreactive.dto.CreateUserRequest;
 import ua.orlov.betreactive.dto.UpdateUserRequest;
+import ua.orlov.betreactive.dto.UserCashOutRequest;
 import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.service.UserService;
 
@@ -43,5 +45,15 @@ public class UserController {
     @PutMapping
     public Mono<User> updateUser(@RequestBody UpdateUserRequest request) {
         return userService.updateUser(request);
+    }
+
+    @PostMapping("/cash-in")
+    public Mono<User> cashIn(@RequestBody UserCashInRequest request) {
+        return userService.cashInToUserBalance(request);
+    }
+
+    @PostMapping("/cash-out")
+    public Mono<User> cashOut(@RequestBody UserCashOutRequest request) {
+        return userService.cashOutToUserBalance(request);
     }
 }

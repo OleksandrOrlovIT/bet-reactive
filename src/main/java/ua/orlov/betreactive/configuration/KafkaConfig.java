@@ -43,4 +43,13 @@ public class KafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic cacheInTopic(@Value("${kafka.topic.general}") String topic) {
+        return TopicBuilder.name(topic)
+                .partitions(10)
+                .replicas(1)
+                .build();
+    }
+
 }

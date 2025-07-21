@@ -1,8 +1,5 @@
 package ua.orlov.betreactive.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +13,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ua.orlov.betreactive.dto.CreateUserRequest;
 import ua.orlov.betreactive.dto.UpdateUserRequest;
+import ua.orlov.betreactive.dto.UserCashInRequest;
+import ua.orlov.betreactive.dto.UserCashOutRequest;
 import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.service.UserService;
 
@@ -129,5 +128,46 @@ class UserControllerTest {
 
         verify(userService).updateUser(any(UpdateUserRequest.class));
     }
+
+    @Test
+    void cashInUserThenSuccess() {
+        UserCashInRequest request = new UserCashInRequest();
+        User user = User.builder().id(UUID.randomUUID()).firstName("John").build();
+
+        when(userService.cashInToUserBalance(any(UserCashInRequest.class))).thenReturn(Mono.just(user));
+
+        webTestClient.post()
+                .uri("/api/v1/users/cash-in")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(user.getId().toString())
+                .jsonPath("$.firstName").isEqualTo("John");
+
+        verify(userService).cashInToUserBalance(any(UserCashInRequest.class));
+    }
+
+    @Test
+    void cashOutUserThenSuccess() {
+        UserCashOutRequest request = new UserCashOutRequest();
+        User user = User.builder().id(UUID.randomUUID()).firstName("John").build();
+
+        when(userService.cashOutToUserBalance(any(UserCashOutRequest.class))).thenReturn(Mono.just(user));
+
+        webTestClient.post()
+                .uri("/api/v1/users/cash-out")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(user.getId().toString())
+                .jsonPath("$.firstName").isEqualTo("John");
+
+        verify(userService).cashOutToUserBalance(any(UserCashOutRequest.class));
+    }
+
 
 }

@@ -3,8 +3,10 @@ package ua.orlov.betreactive.service;
 import org.springframework.data.domain.Pageable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import ua.orlov.betreactive.dto.UserCashInRequest;
 import ua.orlov.betreactive.dto.CreateUserRequest;
 import ua.orlov.betreactive.dto.UpdateUserRequest;
+import ua.orlov.betreactive.dto.UserCashOutRequest;
 import ua.orlov.betreactive.model.User;
 
 import java.util.UUID;
@@ -21,4 +23,7 @@ public interface UserService {
 
     Mono<User> updateUser(UpdateUserRequest request);
 
+    Mono<User> cashInToUserBalance(UserCashInRequest request);
+
+    Mono<User> cashOutToUserBalance(UserCashOutRequest request);
 }

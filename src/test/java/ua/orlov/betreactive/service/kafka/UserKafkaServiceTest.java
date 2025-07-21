@@ -14,6 +14,7 @@ import reactor.kafka.receiver.ReceiverRecord;
 import reactor.kafka.receiver.ReceiverOffset;
 import reactor.kafka.sender.SenderResult;
 import reactor.test.StepVerifier;
+import ua.orlov.betreactive.configuration.ReactiveKafkaConfig;
 import ua.orlov.betreactive.model.User;
 
 import java.util.UUID;
@@ -24,16 +25,23 @@ import static org.mockito.Mockito.*;
 class UserKafkaServiceTest {
 
     @Mock
-    ReactiveKafkaProducerTemplate<String, User> kafkaProducerTemplate;
+    private ReactiveKafkaConfig kafkaConfig;
 
     @Mock
-    ReceiverOptions<String, User> receiverOptions;
+    private ReactiveKafkaProducerTemplate<String, User> kafkaProducerTemplate;
 
-    UserKafkaService userKafkaService;
+    @Mock
+    private ReceiverOptions<String, User> receiverOptions;
+
+    private UserKafkaService userKafkaService;
 
     @BeforeEach
     void setup() {
-        userKafkaService = new UserKafkaService(kafkaProducerTemplate, receiverOptions, "test-topic");
+        when(kafkaConfig.createProducerTemplate(User.class)).thenReturn(kafkaProducerTemplate);
+
+        when(kafkaConfig.<User>createReceiverOptions("test-topic")).thenReturn(receiverOptions);
+
+        userKafkaService = new UserKafkaService(kafkaConfig, "test-topic");
     }
 
     @Test
