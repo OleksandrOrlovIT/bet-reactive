@@ -21,4 +21,8 @@ public interface EventService {
 
     Mono<Event> updateEvent(UpdateEventRequest request);
 
+    Mono<Event> updateEvent(Event event);
+
+    Flux<Event> getAllEndedEvents();
+
 }

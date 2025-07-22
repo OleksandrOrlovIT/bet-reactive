@@ -1,5 +1,6 @@
 package ua.orlov.betreactive.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
@@ -43,17 +44,17 @@ public class UserController {
     }
 
     @PutMapping
-    public Mono<User> updateUser(@RequestBody UpdateUserRequest request) {
+    public Mono<User> updateUser(@Valid @RequestBody UpdateUserRequest request) {
         return userService.updateUser(request);
     }
 
     @PostMapping("/cash-in")
-    public Mono<User> cashIn(@RequestBody UserCashInRequest request) {
+    public Mono<User> cashIn(@Valid @RequestBody UserCashInRequest request) {
         return userService.cashInToUserBalance(request);
     }
 
     @PostMapping("/cash-out")
-    public Mono<User> cashOut(@RequestBody UserCashOutRequest request) {
+    public Mono<User> cashOut(@Valid @RequestBody UserCashOutRequest request) {
         return userService.cashOutToUserBalance(request);
     }
 }

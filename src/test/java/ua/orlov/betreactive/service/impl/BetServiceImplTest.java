@@ -107,13 +107,13 @@ public class BetServiceImplTest {
     void whenGetAllBetsByEventIdThenSuccess() {
         Bet bet1 = Bet.builder().id(UUID.randomUUID()).build();
         Bet bet2 = Bet.builder().id(UUID.randomUUID()).build();
-        when(betRepository.findAllByEventId(any(UUID.class), any(Pageable.class))).thenReturn(Flux.just(bet1, bet2));
+        when(betRepository.findAllByEventId(any(UUID.class))).thenReturn(Flux.just(bet1, bet2));
 
-        StepVerifier.create(betService.getAllBetsByEventId(UUID.randomUUID(), Pageable.unpaged()))
+        StepVerifier.create(betService.getAllBetsByEventId(UUID.randomUUID()))
                 .expectNext(bet1, bet2)
                 .verifyComplete();
 
-        verify(betRepository, times(1)).findAllByEventId(any(UUID.class), any(Pageable.class));
+        verify(betRepository, times(1)).findAllByEventId(any(UUID.class));
     }
 
 }

@@ -28,14 +28,20 @@ spring:
               group.id: bet-reactive-group
       function:
         definition: userProducer;userConsumer
-  logging:
-    level:
-      org.springframework.cloud: DEBUG
-      org.springframework.boot: DEBUG
 
+logging:
+  level:
+    org:
+      apache:
+        kafka: OFF
 kafka:
   topic:
     user: user-topic
     event: event-topic
     bet: bet-topic
     general: general-topic
+scheduler:
+  rate:
+    event-ms: 30_000
+mongodb:
+  db: testdb

@@ -42,10 +42,8 @@ public class BetController {
     }
 
     @GetMapping("/event-id")
-    public Flux<Bet> getBetsByEventId(@RequestParam UUID eventId,
-                            @RequestParam(defaultValue = "0") int pageNumber,
-                            @RequestParam(defaultValue = "10") int pageSize) {
-        return betService.getAllBetsByEventId(eventId, PageRequest.of(pageNumber, pageSize));
+    public Flux<Bet> getBetsByEventId(@RequestParam UUID eventId) {
+        return betService.getAllBetsByEventId(eventId);
     }
 
 }

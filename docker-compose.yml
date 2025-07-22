@@ -8,6 +8,7 @@ services:
       - 27017:27017
     environment:
       MONGO_INITDB_DATABASE: testdb
+    entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.4

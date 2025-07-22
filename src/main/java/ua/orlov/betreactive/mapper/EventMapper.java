@@ -24,5 +24,4 @@ public class EventMapper {
                 .endDate(updateEventRequest.getEndDate())
                 .build();
     }
-
 }

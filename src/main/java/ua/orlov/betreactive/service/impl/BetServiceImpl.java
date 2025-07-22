@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ua.orlov.betreactive.dto.CreateBetRequest;
+import ua.orlov.betreactive.dto.UserCashInRequest;
 import ua.orlov.betreactive.exceptions.EntityNotFoundException;
 import ua.orlov.betreactive.mapper.BetMapper;
 import ua.orlov.betreactive.model.Bet;
@@ -67,8 +68,14 @@ public class BetServiceImpl implements BetService {
     }
 
     @Override
-    public Flux<Bet> getAllBetsByEventId(UUID eventId, Pageable pageable) {
-        return betRepository.findAllByEventId(eventId, pageable)
+    public Flux<Bet> getAllBetsByEventId(UUID eventId) {
+        return betRepository.findAllByEventId(eventId)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(BETS_NOT_FOUND_BY_EVENT_ID_MESSAGE, eventId))));
+    }
+
+    @Override
+    public Mono<Void> computeWonBet(Bet bet) {
+        return userService.cashInToUserBalance(new UserCashInRequest(bet.getUserId(), bet.getAmount().multiply(bet.getCoefficient())))
+                .then();
     }
 }

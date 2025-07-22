@@ -120,7 +120,7 @@ public class BetControllerTest {
         Bet bet1 = Bet.builder().id(UUID.randomUUID()).eventId(eventId).betType(BetType.WIN).build();
         Bet bet2 = Bet.builder().id(UUID.randomUUID()).eventId(eventId).betType(BetType.LOSE).build();
 
-        when(betService.getAllBetsByEventId(any(), any())).thenReturn(Flux.just(bet1, bet2));
+        when(betService.getAllBetsByEventId(any())).thenReturn(Flux.just(bet1, bet2));
 
         webTestClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -133,7 +133,7 @@ public class BetControllerTest {
                 .hasSize(2)
                 .contains(bet1, bet2);
 
-        verify(betService).getAllBetsByEventId(any(), any());
+        verify(betService).getAllBetsByEventId(any());
     }
 
 }

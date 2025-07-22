@@ -19,15 +19,25 @@ public class GeneralKafkaService implements CommandLineRunner {
     private final ReactiveKafkaProducerTemplate<String, String> producerTemplate;
     private final ReceiverOptions<String, String> receiverOptions;
 
+    private final String generalTopic;
+
     public GeneralKafkaService(ReactiveKafkaConfig config, @Value("${kafka.topic.general}") String topic) {
         this.producerTemplate = config.createProducerTemplate(String.class);
         this.receiverOptions = config.createReceiverOptions(topic);
+        this.generalTopic = topic;
     }
 
     public Mono<Void> send(String topic, String key, String message) {
         return producerTemplate.send(topic, key, message)
                 .doOnSuccess(r -> log.info("Sent to topic [{}]: {}", topic, message))
                 .doOnError(e -> log.error("Failed to send to [{}]: {}", topic, message, e))
+                .then();
+    }
+
+    public Mono<Void> sendToGeneral(String key, String message) {
+        return producerTemplate.send(generalTopic, key, message)
+                .doOnSuccess(r -> log.info("Sent to topic [{}]: {}", generalTopic, message))
+                .doOnError(e -> log.error("Failed to send to [{}]: {}", generalTopic, message, e))
                 .then();
     }
 

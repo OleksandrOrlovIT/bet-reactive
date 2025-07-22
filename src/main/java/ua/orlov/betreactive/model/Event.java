@@ -25,4 +25,7 @@ public class Event extends BaseEntity {
     @Field(name = "end_date")
     private LocalDateTime endDate;
 
+    @Field(name = "status")
+    private EventStatus status;
+
 }

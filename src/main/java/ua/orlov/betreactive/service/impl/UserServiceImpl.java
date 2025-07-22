@@ -1,12 +1,17 @@
 package ua.orlov.betreactive.service.impl;
 
+import com.mongodb.MongoException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 import ua.orlov.betreactive.dto.CreateUserRequest;
 import ua.orlov.betreactive.dto.UpdateUserRequest;
 import ua.orlov.betreactive.dto.UserCashInRequest;
@@ -20,6 +25,7 @@ import ua.orlov.betreactive.service.kafka.GeneralKafkaService;
 import ua.orlov.betreactive.service.kafka.UserKafkaService;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.UUID;
 
 @Slf4j
@@ -31,6 +37,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final UserKafkaService userKafkaService;
     private final GeneralKafkaService generalKafkaService;
+    private final TransactionalOperator transactionalOperator;
 
     @Value("${kafka.topic.general}")
     private String generalTopic;
@@ -81,13 +88,30 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public Mono<User> cashInToUserBalance(UserCashInRequest request) {
         return validateUserAndAmount(request.getUserId(), request.getAmount())
                 .flatMap(user -> {
                     BigDecimal old = oldBalance(user);
                     BigDecimal newBalance = old.add(request.getAmount());
                     return updateUserBalance(user, newBalance, "Cash in", old);
-                });
+                })
+                .as(transactionalOperator::transactional)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .filter(this::isTransientDatabaseError)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new IllegalStateException("Transaction failed after retries", retrySignal.failure()))
+                );
+    }
+
+    private boolean isTransientDatabaseError(Throwable throwable) {
+        if (throwable instanceof OptimisticLockingFailureException) {
+            return true;
+        }
+        if (throwable instanceof MongoException && ((MongoException) throwable).getCode() == 251) {
+            return true;
+        }
+        return false;
     }
 
     @Override

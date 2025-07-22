@@ -11,10 +11,12 @@ import ua.orlov.betreactive.dto.UpdateEventRequest;
 import ua.orlov.betreactive.exceptions.EntityNotFoundException;
 import ua.orlov.betreactive.mapper.EventMapper;
 import ua.orlov.betreactive.model.Event;
+import ua.orlov.betreactive.model.EventStatus;
 import ua.orlov.betreactive.repository.EventRepository;
 import ua.orlov.betreactive.service.EventService;
 import ua.orlov.betreactive.service.kafka.EventKafkaService;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Log4j2
@@ -32,12 +34,16 @@ public class EventServiceImpl implements EventService {
     @Override
     public Mono<Event> createEvent(CreateEventRequest request) {
         if(!request.getStartDate().isBefore(request.getEndDate())) {
-            return Mono.error(new EntityNotFoundException(STARTDATE_NOT_AFTER_ENDDATE));
+            return Mono.error(new IllegalArgumentException(STARTDATE_NOT_AFTER_ENDDATE));
         }
 
         Event mappedEvent = eventMapper.mapCreateEventRequestToEvent(request);
 
         mappedEvent.setId(UUID.randomUUID());
+
+        if(mappedEvent.getStatus() == null) {
+            mappedEvent.setStatus(EventStatus.ACTIVE);
+        }
 
         return eventRepository.save(mappedEvent)
                 .doOnSuccess(eventKafkaService::sendEntity);
@@ -61,6 +67,11 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
+    public Flux<Event> getAllEndedEvents() {
+        return eventRepository.findAllByStatusAndEndDateBefore(EventStatus.ACTIVE, LocalDateTime.now());
+    }
+
+    @Override
     public Mono<Event> updateEvent(UpdateEventRequest request) {
         return getEventById(request.getId())
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Event not found with id: " + request.getId())))
@@ -68,5 +79,12 @@ public class EventServiceImpl implements EventService {
                     Event updatedEvent = eventMapper.mapUpdateEventRequestToEvent(request);
                     return eventRepository.save(updatedEvent);
                 });
+    }
+
+    @Override
+    public Mono<Event> updateEvent(Event event) {
+        return getEventById(event.getId())
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Event not found with id: " + event.getId())))
+                .flatMap(existingEvent -> eventRepository.save(event));
     }
 }

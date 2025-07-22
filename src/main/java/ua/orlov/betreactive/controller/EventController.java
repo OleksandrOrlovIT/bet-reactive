@@ -1,5 +1,6 @@
 package ua.orlov.betreactive.controller;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class EventController {
     private final EventService eventService;
 
     @PostMapping
-    public Mono<Event> createEvent(@RequestBody CreateEventRequest request) {
+    public Mono<Event> createEvent(@Valid @RequestBody CreateEventRequest request) {
         return eventService.createEvent(request);
     }
 
@@ -41,7 +42,7 @@ public class EventController {
     }
 
     @PutMapping
-    public Mono<Event> updateEvent(@RequestBody UpdateEventRequest request) {
+    public Mono<Event> updateEvent(@Valid @RequestBody UpdateEventRequest request) {
         return eventService.updateEvent(request);
     }
 
