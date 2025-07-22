@@ -55,7 +55,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<User> getUserById(UUID id) {
-        return userRepository.findById(id);
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, id))));
     }
 
     @Override
@@ -105,7 +106,6 @@ public class UserServiceImpl implements UserService {
 
     private Mono<User> validateUserAndAmount(UUID userId, BigDecimal amount) {
         return getUserById(userId)
-                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(USER_NOT_FOUND_MESSAGE, userId))))
                 .filter(user -> amount != null && amount.signum() > 0)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(AMOUNT_LESS_THAN_ZERO_MESSAGE)));
     }
