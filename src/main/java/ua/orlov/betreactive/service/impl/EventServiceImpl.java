@@ -26,8 +26,15 @@ public class EventServiceImpl implements EventService {
     private final EventMapper eventMapper;
     private final EventKafkaService eventKafkaService;
 
+    private static final String EVENT_NOT_FOUND_MESSAGE = "Event not found with id: %s";
+    private static final String STARTDATE_NOT_AFTER_ENDDATE = "Start date should be after end date of the event";
+
     @Override
     public Mono<Event> createEvent(CreateEventRequest request) {
+        if(!request.getStartDate().isBefore(request.getEndDate())) {
+            return Mono.error(new EntityNotFoundException(STARTDATE_NOT_AFTER_ENDDATE));
+        }
+
         Event mappedEvent = eventMapper.mapCreateEventRequestToEvent(request);
 
         mappedEvent.setId(UUID.randomUUID());
@@ -38,7 +45,8 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public Mono<Event> getEventById(UUID id) {
-        return eventRepository.findById(id);
+        return eventRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(EVENT_NOT_FOUND_MESSAGE, id))));
     }
 
     @Override

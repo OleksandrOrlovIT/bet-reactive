@@ -18,4 +18,6 @@ public interface BetService {
 
     Mono<Void> deleteBetById(UUID id);
 
+    Flux<Bet> getAllBetsByEventId(UUID eventId, Pageable pageable);
+
 }

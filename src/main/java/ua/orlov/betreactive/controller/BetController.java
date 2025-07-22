@@ -1,6 +1,7 @@
 package ua.orlov.betreactive.controller;
 
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class BetController {
     private final BetService betService;
 
     @PostMapping
-    public Mono<Bet> createBet(@RequestBody CreateBetRequest request) {
+    public Mono<Bet> createBet(@Valid @RequestBody CreateBetRequest request) {
         return betService.createBet(request);
     }
 
@@ -38,6 +39,13 @@ public class BetController {
     @DeleteMapping("/{id}")
     public Mono<Void> deleteBet(@PathVariable UUID id) {
         return betService.deleteBetById(id);
+    }
+
+    @GetMapping("/event-id")
+    public Flux<Bet> getBetsByEventId(@RequestParam UUID eventId,
+                            @RequestParam(defaultValue = "0") int pageNumber,
+                            @RequestParam(defaultValue = "10") int pageSize) {
+        return betService.getAllBetsByEventId(eventId, PageRequest.of(pageNumber, pageSize));
     }
 
 }

@@ -11,6 +11,7 @@ public class BetMapper {
     public Bet mapCreateBetRequestToBet(CreateBetRequest createBetRequest) {
         return Bet.builder()
                 .userId(createBetRequest.getUserId())
+                .eventId(createBetRequest.getEventId())
                 .amount(createBetRequest.getAmount())
                 .coefficient(createBetRequest.getCoefficient())
                 .betType(BetType.fromStringIgnoreCase(createBetRequest.getBetType()))

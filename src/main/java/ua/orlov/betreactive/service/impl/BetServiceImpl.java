@@ -7,10 +7,15 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ua.orlov.betreactive.dto.CreateBetRequest;
+import ua.orlov.betreactive.exceptions.EntityNotFoundException;
 import ua.orlov.betreactive.mapper.BetMapper;
 import ua.orlov.betreactive.model.Bet;
+import ua.orlov.betreactive.model.Event;
+import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.repository.BetRepository;
 import ua.orlov.betreactive.service.BetService;
+import ua.orlov.betreactive.service.EventService;
+import ua.orlov.betreactive.service.UserService;
 import ua.orlov.betreactive.service.kafka.BetKafkaService;
 
 import java.time.LocalDateTime;
@@ -22,23 +27,32 @@ import java.util.UUID;
 public class BetServiceImpl implements BetService {
 
     private final BetRepository betRepository;
+    private final UserService userService;
+    private final EventService eventService;
     private final BetMapper betMapper;
     private final BetKafkaService betKafkaService;
+
+    private static final String BET_NOT_FOUND_MESSAGE = "Bet not found with id: %s";
+    private static final String BETS_NOT_FOUND_BY_EVENT_ID_MESSAGE = "No bets found for event with id: %s";
 
     @Override
     public Mono<Bet> createBet(CreateBetRequest request) {
         Bet mappedBet = betMapper.mapCreateBetRequestToBet(request);
-
         mappedBet.setId(UUID.randomUUID());
         mappedBet.setCreatedAt(LocalDateTime.now());
 
-        return betRepository.save(mappedBet)
+        Mono<User> userMono = userService.getUserById(mappedBet.getUserId());
+        Mono<Event> eventMono = eventService.getEventById(mappedBet.getEventId());
+
+        return userMono.zipWith(eventMono)
+                .flatMap(tuple -> betRepository.save(mappedBet))
                 .doOnSuccess(betKafkaService::sendEntity);
     }
 
     @Override
     public Mono<Bet> getBetById(UUID id) {
-        return betRepository.findById(id);
+        return betRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(BET_NOT_FOUND_MESSAGE, id))));
     }
 
     @Override
@@ -50,5 +64,11 @@ public class BetServiceImpl implements BetService {
     public Mono<Void> deleteBetById(UUID id) {
         return betRepository.deleteById(id)
                 .doOnTerminate(() -> log.info("Deleted bet from DB: {}", id));
+    }
+
+    @Override
+    public Flux<Bet> getAllBetsByEventId(UUID eventId, Pageable pageable) {
+        return betRepository.findAllByEventId(eventId, pageable)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(BETS_NOT_FOUND_BY_EVENT_ID_MESSAGE, eventId))));
     }
 }

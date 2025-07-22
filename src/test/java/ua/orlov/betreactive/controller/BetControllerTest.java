@@ -16,6 +16,7 @@ import ua.orlov.betreactive.model.Bet;
 import ua.orlov.betreactive.model.BetType;
 import ua.orlov.betreactive.service.BetService;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,11 +42,16 @@ public class BetControllerTest {
     @Test
     void createBetThenSuccess() {
         CreateBetRequest request = new CreateBetRequest();
+        request.setUserId(UUID.randomUUID());
+        request.setEventId(UUID.randomUUID());
+        request.setAmount(BigDecimal.ONE);
+        request.setCoefficient(BigDecimal.valueOf(1.1));
+        request.setBetType("WIN");
         Bet bet = Bet.builder().id(UUID.randomUUID()).betType(BetType.WIN).build();
 
         when(betController.createBet(any(CreateBetRequest.class))).thenReturn(Mono.just(bet));
 
-        webTestClient.post()
+        var e = webTestClient.post()
                 .uri("/api/v1/bets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
@@ -105,6 +111,29 @@ public class BetControllerTest {
                 .expectBody().isEmpty();
 
         verify(betService).deleteBetById(any(UUID.class));
+    }
+
+    @Test
+    void getAllBetsByEventIdThenSuccess() {
+        UUID eventId = UUID.randomUUID();
+
+        Bet bet1 = Bet.builder().id(UUID.randomUUID()).eventId(eventId).betType(BetType.WIN).build();
+        Bet bet2 = Bet.builder().id(UUID.randomUUID()).eventId(eventId).betType(BetType.LOSE).build();
+
+        when(betService.getAllBetsByEventId(any(), any())).thenReturn(Flux.just(bet1, bet2));
+
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/bets/event-id")
+                        .queryParam("eventId", bet1.getEventId().toString())
+                        .build())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(Bet.class)
+                .hasSize(2)
+                .contains(bet1, bet2);
+
+        verify(betService).getAllBetsByEventId(any(), any());
     }
 
 }

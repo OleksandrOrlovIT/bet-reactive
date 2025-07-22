@@ -13,4 +13,6 @@ public interface BetRepository extends ReactiveMongoRepository<Bet, UUID> {
 
     Flux<Bet> findAllBy(Pageable pageable);
 
+    Flux<Bet> findAllByEventId(UUID eventId, Pageable pageable);
+
 }

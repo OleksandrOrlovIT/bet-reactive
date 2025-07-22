@@ -21,6 +21,9 @@ public class Bet extends BaseEntity{
     @Field(name = "user_id")
     private UUID userId;
 
+    @Field(name = "event_Id")
+    private UUID eventId;
+
     @Field(name = "amount")
     private BigDecimal amount;
 

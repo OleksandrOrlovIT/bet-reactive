@@ -16,6 +16,9 @@ import ua.orlov.betreactive.model.Event;
 import ua.orlov.betreactive.repository.EventRepository;
 import ua.orlov.betreactive.service.kafka.EventKafkaService;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -39,18 +42,39 @@ public class EventServiceImplTest {
 
     @Test
     void whenCreateEventThenSuccess() {
-        Event mappedEvent = Event.builder().id(UUID.randomUUID()).build();
+        CreateEventRequest request = new CreateEventRequest();
+        request.setName("name");
+        request.setStartDate(LocalDateTime.of(LocalDate.now(), LocalTime.now()));
+        request.setEndDate(LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.now()));
 
-        when(eventMapper.mapCreateEventRequestToEvent(any())).thenReturn(Event.builder().build());
+        Event mappedEvent = Event.builder().build();
+
+        when(eventMapper.mapCreateEventRequestToEvent(any())).thenReturn(mappedEvent);
         when(eventRepository.save(any())).thenReturn(Mono.just(mappedEvent));
 
-        StepVerifier.create(eventService.createEvent(new CreateEventRequest()))
+        StepVerifier.create(eventService.createEvent(request))
                 .expectNext(mappedEvent)
                 .verifyComplete();
 
         verify(eventMapper, times(1)).mapCreateEventRequestToEvent(any());
         verify(eventRepository, times(1)).save(any());
         verify(eventKafkaService, times(1)).sendEntity(any());
+    }
+
+    @Test
+    void whenCreateEventThenStartDateAfterEndDateThenException() {
+        CreateEventRequest request = new CreateEventRequest();
+        request.setName("name");
+        request.setStartDate(LocalDateTime.of(LocalDate.now(), LocalTime.now()));
+        request.setEndDate(LocalDateTime.of(LocalDate.now().minusDays(1), LocalTime.now()));
+
+        StepVerifier.create(eventService.createEvent(request))
+                .expectErrorMessage("Start date should be after end date of the event")
+                .verify();
+
+        verify(eventMapper, times(0)).mapCreateEventRequestToEvent(any());
+        verify(eventRepository, times(0)).save(any());
+        verify(eventKafkaService, times(0)).sendEntity(any());
     }
 
     @Test
