@@ -18,6 +18,7 @@ import ua.orlov.betreactive.dto.UserCashOutRequest;
 import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.service.UserService;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -112,7 +113,16 @@ class UserControllerTest {
     @Test
     void updateUserThenSuccess() {
         UpdateUserRequest request = new UpdateUserRequest();
-        User user = User.builder().id(UUID.randomUUID()).firstName("John").build();
+        request.setId(UUID.randomUUID());
+        request.setEmail("email");
+        request.setFirstName("firstName");
+        request.setLastName("lastName");
+        User user = User.builder()
+                .id(request.getId())
+                .email(request.getEmail())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .build();
 
         when(userService.updateUser(any(UpdateUserRequest.class))).thenReturn(Mono.just(user));
 
@@ -132,7 +142,9 @@ class UserControllerTest {
     @Test
     void cashInUserThenSuccess() {
         UserCashInRequest request = new UserCashInRequest();
-        User user = User.builder().id(UUID.randomUUID()).firstName("John").build();
+        request.setAmount(BigDecimal.ONE);
+        request.setUserId(UUID.randomUUID());
+        User user = User.builder().id(request.getUserId()).firstName("John").build();
 
         when(userService.cashInToUserBalance(any(UserCashInRequest.class))).thenReturn(Mono.just(user));
 
@@ -152,7 +164,9 @@ class UserControllerTest {
     @Test
     void cashOutUserThenSuccess() {
         UserCashOutRequest request = new UserCashOutRequest();
-        User user = User.builder().id(UUID.randomUUID()).firstName("John").build();
+        request.setAmount(BigDecimal.ONE);
+        request.setUserId(UUID.randomUUID());
+        User user = User.builder().id(request.getUserId()).firstName("John").build();
 
         when(userService.cashOutToUserBalance(any(UserCashOutRequest.class))).thenReturn(Mono.just(user));
 

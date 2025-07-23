@@ -1,11 +1,16 @@
 package ua.orlov.betreactive.service.impl;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -14,6 +19,7 @@ import ua.orlov.betreactive.dto.CreateUserRequest;
 import ua.orlov.betreactive.dto.UpdateUserRequest;
 import ua.orlov.betreactive.dto.UserCashInRequest;
 import ua.orlov.betreactive.dto.UserCashOutRequest;
+import ua.orlov.betreactive.exceptions.EntityNotFoundException;
 import ua.orlov.betreactive.mapper.UserMapper;
 import ua.orlov.betreactive.model.User;
 import ua.orlov.betreactive.repository.UserRepository;
@@ -40,6 +46,9 @@ class UserServiceImplTest {
 
     @Mock
     private GeneralKafkaService generalKafkaService;
+
+    @Mock
+    private ReactiveMongoTemplate mongoTemplate;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -135,72 +144,40 @@ class UserServiceImplTest {
     }
 
     @Test
-    void cashInToUserBalanceThenNotFoundException() {
+    void cashInToUserBalanceWhenAmountNullThenException() {
+        UserCashInRequest request = new UserCashInRequest();
+
+        StepVerifier.create(userService.cashInToUserBalance(request))
+                .expectErrorMessage("Amount must be greater than zero")
+                .verify();
+    }
+
+    @Test
+    void cashInToUserBalanceWhenAmountLessThanZeroThenException() {
+        UserCashInRequest request = new UserCashInRequest();
+        request.setAmount(BigDecimal.valueOf(-1));
+
+        StepVerifier.create(userService.cashInToUserBalance(request))
+                .expectErrorMessage("Amount must be greater than zero")
+                .verify();
+    }
+
+    @Test
+    void cashInToUserBalanceWheUserDoesntExistThenException() {
         UserCashInRequest request = new UserCashInRequest();
         request.setUserId(UUID.randomUUID());
+        request.setAmount(BigDecimal.valueOf(1));
+
+        ReflectionTestUtils.setField(userService, "generalTopic", "some-topic");
 
         when(userRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
+        when(generalKafkaService.send(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(userService.cashInToUserBalance(request))
                 .expectErrorMessage("User not found with id: " + request.getUserId())
                 .verify();
-    }
-
-    @Test
-    void cashInToUserBalanceThenBalanceIsNull() {
-        UserCashInRequest request = new UserCashInRequest();
-        request.setUserId(UUID.randomUUID());
-
-        User user = User.builder().build();
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-
-        StepVerifier.create(userService.cashInToUserBalance(request))
-                .expectErrorMessage("Amount can't be null must be greater than zero")
-                .verify();
 
         verify(userRepository, times(1)).findById(any(UUID.class));
-    }
-
-    @Test
-    void cashInToUserBalanceThenBalanceIsLessThanZero() {
-        UserCashInRequest request = new UserCashInRequest();
-        request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(-1));
-
-        User user = User.builder().build();
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-
-        StepVerifier.create(userService.cashInToUserBalance(request))
-                .expectErrorMessage("Amount can't be null must be greater than zero")
-                .verify();
-
-        verify(userRepository, times(1)).findById(any(UUID.class));
-    }
-
-    @Test
-    void cashInToUserBalanceThenSaveException() {
-        UserCashInRequest request = new UserCashInRequest();
-        request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(100));
-
-        User user = User.builder().id(UUID.randomUUID()).build();
-
-        String errorMessage = "Error";
-        IllegalArgumentException exception =  new IllegalArgumentException(errorMessage);
-        ReflectionTestUtils.setField(userService, "generalTopic", "test-general-topic");
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        when(userRepository.save(any(User.class))).thenReturn(Mono.error(exception));
-        when(generalKafkaService.send(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
-
-        StepVerifier.create(userService.cashInToUserBalance(request))
-                .expectErrorMessage(errorMessage)
-                .verify();
-
-        verify(userRepository, times(1)).findById(any(UUID.class));
-        verify(userRepository, times(1)).save(any(User.class));
         verify(generalKafkaService, times(1)).send(anyString(), anyString(), anyString());
     }
 
@@ -208,15 +185,17 @@ class UserServiceImplTest {
     void cashInToUserBalanceThenSuccess() {
         UserCashInRequest request = new UserCashInRequest();
         request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(100));
+        request.setAmount(BigDecimal.valueOf(1));
 
-        User user = User.builder().id(request.getUserId()).build();
-        User updatedUser = User.builder().id(request.getUserId()).balance(BigDecimal.valueOf(100)).build();
-
-        ReflectionTestUtils.setField(userService, "generalTopic", "test-general-topic");
+        User user = User.builder()
+                .id(request.getUserId())
+                .build();
+        ReflectionTestUtils.setField(userService, "generalTopic", "some-topic");
 
         when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
+        when(mongoTemplate.findAndModify(
+                any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(User.class))
+        ).thenReturn(Mono.just(user));
         when(generalKafkaService.send(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(userService.cashInToUserBalance(request))
@@ -224,95 +203,31 @@ class UserServiceImplTest {
                 .verifyComplete();
 
         verify(userRepository, times(1)).findById(any(UUID.class));
-        verify(userRepository, times(1)).save(any(User.class));
+        verify(mongoTemplate, times(1))
+                .findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(User.class));
         verify(generalKafkaService, times(1)).send(anyString(), anyString(), anyString());
     }
 
     @Test
-    void cashOutToUserBalanceThenNotFoundException() {
-        UserCashOutRequest request = new UserCashOutRequest();
-        request.setUserId(UUID.randomUUID());
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.empty());
-
-        StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectErrorMessage("User not found with id: " + request.getUserId())
-                .verify();
-    }
-
-    @Test
-    void cashOutToUserBalanceThenBalanceIsNull() {
-        UserCashOutRequest request = new UserCashOutRequest();
-        request.setUserId(UUID.randomUUID());
-
-        User user = User.builder().build();
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-
-        StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectErrorMessage("Amount can't be null must be greater than zero")
-                .verify();
-
-        verify(userRepository, times(1)).findById(any(UUID.class));
-    }
-
-    @Test
-    void cashOutToUserBalanceThenBalanceIsLessThanZero() {
-        UserCashOutRequest request = new UserCashOutRequest();
-        request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(-1));
-
-        User user = User.builder().build();
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-
-        StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectErrorMessage("Amount can't be null must be greater than zero")
-                .verify();
-
-        verify(userRepository, times(1)).findById(any(UUID.class));
-    }
-
-    @Test
-    void cashOutToUserBalanceThenInsufficientAmountException() {
+    void cashOutToUserBalanceWhenBalanceLessThanAmountThenException() {
         UserCashOutRequest request = new UserCashOutRequest();
         request.setUserId(UUID.randomUUID());
         request.setAmount(BigDecimal.valueOf(100));
 
-        User user = User.builder().id(UUID.randomUUID()).build();
+        User user = User.builder()
+                .id(request.getUserId())
+                .balance(BigDecimal.valueOf(1))
+                .build();
+        ReflectionTestUtils.setField(userService, "generalTopic", "some-topic");
 
         when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-
-        StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectErrorMessage("Insufficient balance for cash out")
-                .verify();
-
-        verify(userRepository, times(1)).findById(any(UUID.class));
-    }
-
-
-    @Test
-    void cashOutToUserBalanceThenSaveException() {
-        UserCashOutRequest request = new UserCashOutRequest();
-        request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(100));
-
-        User user = User.builder().balance(BigDecimal.valueOf(100)).id(UUID.randomUUID()).build();
-
-        String errorMessage = "Error";
-        IllegalArgumentException exception =  new IllegalArgumentException(errorMessage);
-        ReflectionTestUtils.setField(userService, "generalTopic", "test-general-topic");
-
-        when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        when(userRepository.save(any(User.class))).thenReturn(Mono.error(exception));
         when(generalKafkaService.send(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectErrorMessage(errorMessage)
+                .expectErrorMessage("Insufficient funds")
                 .verify();
 
         verify(userRepository, times(1)).findById(any(UUID.class));
-        verify(userRepository, times(1)).save(any(User.class));
         verify(generalKafkaService, times(1)).send(anyString(), anyString(), anyString());
     }
 
@@ -320,23 +235,27 @@ class UserServiceImplTest {
     void cashOutToUserBalanceThenSuccess() {
         UserCashOutRequest request = new UserCashOutRequest();
         request.setUserId(UUID.randomUUID());
-        request.setAmount(BigDecimal.valueOf(100));
+        request.setAmount(BigDecimal.valueOf(1));
 
-        User user = User.builder().balance(BigDecimal.valueOf(100)).id(UUID.randomUUID()).build();
-        User updatedUser = User.builder().id(request.getUserId()).balance(BigDecimal.valueOf(0)).build();
-
-        ReflectionTestUtils.setField(userService, "generalTopic", "test-general-topic");
+        User user = User.builder()
+                .id(request.getUserId())
+                .balance(BigDecimal.valueOf(1))
+                .build();
+        ReflectionTestUtils.setField(userService, "generalTopic", "some-topic");
 
         when(userRepository.findById(any(UUID.class))).thenReturn(Mono.just(user));
-        when(userRepository.save(any(User.class))).thenReturn(Mono.just(updatedUser));
+        when(mongoTemplate.findAndModify(
+                any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(User.class))
+        ).thenReturn(Mono.just(user));
         when(generalKafkaService.send(anyString(), anyString(), anyString())).thenReturn(Mono.empty());
 
         StepVerifier.create(userService.cashOutToUserBalance(request))
-                .expectNext(updatedUser)
+                .expectNext(user)
                 .verifyComplete();
 
         verify(userRepository, times(1)).findById(any(UUID.class));
-        verify(userRepository, times(1)).save(any(User.class));
+        verify(mongoTemplate, times(1))
+                .findAndModify(any(Query.class), any(Update.class), any(FindAndModifyOptions.class), eq(User.class));
         verify(generalKafkaService, times(1)).send(anyString(), anyString(), anyString());
     }
 }

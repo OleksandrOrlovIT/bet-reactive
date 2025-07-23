@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+import org.springframework.data.mongodb.core.mapping.FieldType;
 
 import java.math.BigDecimal;
 
@@ -27,7 +28,7 @@ public class User extends BaseEntity {
     @Field(name = "email")
     private String email;
 
-    @Field(name = "balance")
+    @Field(name = "balance", targetType = FieldType.DECIMAL128)
     private BigDecimal balance;
 
 }

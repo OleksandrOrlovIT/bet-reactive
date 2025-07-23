@@ -34,7 +34,6 @@ public class BetServiceImpl implements BetService {
     private final BetKafkaService betKafkaService;
 
     private static final String BET_NOT_FOUND_MESSAGE = "Bet not found with id: %s";
-    private static final String BETS_NOT_FOUND_BY_EVENT_ID_MESSAGE = "No bets found for event with id: %s";
 
     @Override
     public Mono<Bet> createBet(CreateBetRequest request) {
@@ -69,8 +68,7 @@ public class BetServiceImpl implements BetService {
 
     @Override
     public Flux<Bet> getAllBetsByEventId(UUID eventId) {
-        return betRepository.findAllByEventId(eventId)
-                .switchIfEmpty(Mono.error(new EntityNotFoundException(String.format(BETS_NOT_FOUND_BY_EVENT_ID_MESSAGE, eventId))));
+        return betRepository.findAllByEventId(eventId);
     }
 
     @Override

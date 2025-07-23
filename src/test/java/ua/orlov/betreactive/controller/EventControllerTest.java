@@ -16,6 +16,7 @@ import ua.orlov.betreactive.dto.UpdateEventRequest;
 import ua.orlov.betreactive.model.Event;
 import ua.orlov.betreactive.service.EventService;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,6 +42,9 @@ public class EventControllerTest {
     @Test
     void createEventThenSuccess() {
         CreateEventRequest request = new CreateEventRequest();
+        request.setName("Event Name");
+        request.setStartDate(LocalDateTime.now());
+        request.setEndDate(LocalDateTime.now().plusDays(1));
         Event event = Event.builder().id(UUID.randomUUID()).name("Event Name").build();
 
         when(eventService.createEvent(any(CreateEventRequest.class))).thenReturn(Mono.just(event));
@@ -110,6 +114,10 @@ public class EventControllerTest {
     @Test
     void updateEventThenSuccess() {
         UpdateEventRequest updateEventRequest = new UpdateEventRequest();
+        updateEventRequest.setId(UUID.randomUUID());
+        updateEventRequest.setName("Event Name");
+        updateEventRequest.setStartDate(LocalDateTime.now());
+        updateEventRequest.setEndDate(LocalDateTime.now().plusDays(1));
         Event event = Event.builder().id(UUID.randomUUID()).name("Event Name").build();
 
         when(eventService.updateEvent(any(UpdateEventRequest.class))).thenReturn(Mono.just(event));
